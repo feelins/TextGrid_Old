@@ -1,0 +1,15 @@
+000001
+卡 尔 普2 陪 外 孙1 玩 滑 梯4。
+[k a2][er2][p u3 (L-L%)]#[p ei2][uai4][s uen1]*[uan2][h ua2][t i1 (L-L%)]
+000002
+假语村言2别再1拥抱我4。
+[j ia2][v3][c uen1][ian2 (L-L%)]#[b ie2][z ai4]*[iong1][b ao4][uo3 (L-L%)]
+000003
+宝马1配挂1跛骡鞍3，貂蝉1怨枕2董翁榻4。
+[b ao2][m a3]*[p ei4][g ua4]*[b o3][l uo2][an1 (L-L%)sp]#[d iao1][ch an2]*[van4][zh en3 (L-L%)]#[d ong3][ueng1][t a4 (L-L%)]
+000004
+邓小平2与1撒切尔2会晤4。
+[d eng4][x iao3][p ing2 (L-L%)]#[v3]*[s a4][q ie4][er3 (L-L%)]#[h uei4][u4 (L-L%)]
+000005
+老虎1幼崽2与1宠物犬1玩耍4。
+[l ao2][h u3]*[iou4][z ai3 (L-L%)sp]#[v2]*[ch ong3][u4][q van3]*[uan2][sh ua3 (L-L%)]
