@@ -1,11 +1,11 @@
 # coding=utf-8
 #!/usr/bin/python
 # Created on 2018-03-20 10:29
-# @author: Administrator
+# @author: feipengshao@163.com
 # @name: GenTextGridFromMonolab.py
 # @info:  从monolab生成TextGrid
 
-from TextGrid import TextGrid, Interval, Tier
+from TextGrid import *
 import wave
 import os
 import re
@@ -28,23 +28,23 @@ def getIntervalListFromMonolab(input_monolab_file):
 
 def getIntervalListFromProsodyPhonLine(prosody_phon_line):
     """韵律文本的读音行，分隔成音节和读音的序列"""
-    symbols = ["(L-L%)", "silv"]
+    """返回带声调的，和不带声调的音节"""
+    symbols = ["(L-L%)", "silv", "sp"]
+    # 增加正则表达式实现
     for sym in symbols:
         prosody_phon_line = prosody_phon_line.replace(sym, "")
-    prosody_phon_line = prosody_phon_line.replace("/", "]/[")
-    syllables = re.split("\#|\/|\[|\]", prosody_phon_line)
+    syllables = re.split("\#|\/|\[|\]|\*", prosody_phon_line)
     syllables = [item for item in filter(lambda x: x != '', syllables)]
+    syllables = [item for item in map(lambda x: x.strip(), syllables)]
     syllables_noTone = []
     for syl in syllables:
-        syllables_noTone.append(syl[0:-2])
+        syllables_noTone.append(syl[0:-1])
     return syllables, syllables_noTone
 
 def getIntervalListFromProsodyWordLine(prosody_word_line):
     sarray = re.split(" |\/|\[|\]", prosody_word_line)
     sarray = [item for item in filter(lambda x: x != '', sarray)]
     biaodian = ["，", "：", "。", "、", "？", "；", "！", "【", "】", "《", "》", "", "”", "“", '—', "-", "?", ";", "…", "(", ")"]
-    special_file = open(r'E:\005_others\01_ShangHai\003_News\002_Prosody_20180319_null.txt', 'r', encoding = 'utf-8')
-    special_list = special_file.readlines()
     newWord = []
     i = 0
     while i < len(sarray):
@@ -52,20 +52,14 @@ def getIntervalListFromProsodyWordLine(prosody_word_line):
         if i != len(sarray) - 1:
             next_word = sarray[i + 1]
         cur_word = sarray[i]
-        if cur_word + "\n" in special_list:
-            if next_word in biaodian:
-                cur_word += next_word
-                i = i + 1
-            newWord.append(cur_word + "1")
-        else:
-            for j in range(len(cur_word)):
-                tmp_cur_word = cur_word[j]
-                if j == len(cur_word) - 1:
-                    if next_word in biaodian:
-                        tmp_cur_word += next_word
-                        i = i + 1
-                    tmp_cur_word += "1"
-                newWord.append(tmp_cur_word)
+        for j in range(len(cur_word)):
+            tmp_cur_word = cur_word[j]
+            if j == len(cur_word) - 1:
+                if next_word in biaodian:
+                    tmp_cur_word += next_word
+                    i = i + 1
+                tmp_cur_word += "1"
+            newWord.append(tmp_cur_word)
         i = i + 1
     return newWord
 
@@ -91,15 +85,15 @@ def initialWordIntervalTime(word_interval_list, syllable_interval_list, syllable
             tmp_next_array = re.split(" |\t", input_list[i + 1].strip())
             tmp_next_array = [item for item in filter(lambda x: x != '', tmp_next_array)]
         try:
-            if tmp_array[2] not in ["sil", "silv"]:
+            if tmp_array[2] not in ["sil", "silv", "sp"]:
                 tmp_mono_syl_name += tmp_array[2] + " "
             if tmp_mono_syl_name.strip() == syllable_interval_no_tone_list[syll_index]:
                 phon_intervals.append(Interval((i + 1), getFloat(tmp_array[0]), getFloat(tmp_phon_end), tmp_array[2] + syllable_interval_list[syll_index][-2:len(syllable_interval_list)]))
-                if tmp_next_array[2] in ["sil", "silv"]:
+                if tmp_next_array[2] in ["sil", "silv", "sp"]:
                     tmp_phon_end = tmp_next_array[1]
                     if tmp_next_array[2] == "sil":
                         break_name = "4"
-                    if tmp_next_array[2] == "silv":
+                    if tmp_next_array[2] == "silv" or tmp_next_array[2] == "sp":
                         break_name = "3" 
                     i += 1
                     tmp_sil_array = re.split(" |\t", input_list[i].strip())
@@ -124,19 +118,28 @@ def initialWordIntervalTime(word_interval_list, syllable_interval_list, syllable
             print(str(e) + "\t" + input_list[i].strip() + "\t" + input_monolab_file)
             exit(0)
         i = i + 1
-    return phon_intervals, word_intervals, break_intervals
+    phon_s = {}
+    for i in range(len(phon_intervals)):
+        phon_s[i + 1] = phon_intervals[i]
+    word_s = {}
+    for i in range(len(word_intervals)):
+        word_s[i + 1] = word_intervals[i]
+    break_s = {}
+    for i in range(len(break_intervals)):
+        break_s[i + 1] = break_intervals[i]
+    return phon_s, word_s, break_s
 
 def setToneInterval(phon_intervals):
     """根据第一层是否有停顿，增加边界调"""
-    result_intervals = []
-    for i in range(len(phon_intervals)):
+    result_intervals = {}
+    for i in range(1, len(phon_intervals) + 1):
         next_interval_name = ""
-        if i != len(phon_intervals) - 1:
+        if i != len(phon_intervals):
             next_interval_name = phon_intervals[i + 1].name
-        if next_interval_name in ["sil", "silv"]:
-            result_intervals.append(Interval(phon_intervals[i].index, phon_intervals[i].begin, phon_intervals[i].end, "L-L%"))
+        if next_interval_name in ["sil", "silv", "sp"]:
+            result_intervals[i] = Interval(phon_intervals[i].index, phon_intervals[i].begin, phon_intervals[i].end, "L-L%")
         else:
-            result_intervals.append(Interval(phon_intervals[i].index, phon_intervals[i].begin, phon_intervals[i].end, ""))
+            result_intervals[i] = Interval(phon_intervals[i].index, phon_intervals[i].begin, phon_intervals[i].end, "")
     return result_intervals
 
 def setBreakInterval(phon_intervals):
@@ -161,10 +164,10 @@ def getBlankTiers(input_intervals):
 def getFloat(input_str):
     return str(float(input_str) / 10000000)
         
-input_file = r'E:\005_others\01_ShangHai\003_News\002_Prosody_20180319.txt'
-wav_path = r'E:\005_others\01_ShangHai\003_News\wav'
-monolab_path = r'E:\005_others\01_ShangHai\003_News\monolabInitialAlign'
-textgrid_path = r'E:\005_others\01_ShangHai\003_News\TextGrid_news_Initial' #输出
+input_file = r'./data_examples/Prosody.txt' #为了
+wav_path = r'./data_examples/wav'
+monolab_path = r'./data_examples/monolab'
+textgrid_path = r'./data_examples/TextGrid_Initial' #输出
 
 # 如果目录不存在，创建输出目录
 if not os.path.exists(textgrid_path):
@@ -182,19 +185,18 @@ for i in range(0, len(lines), 3):
     wav_file = os.path.join(wav_path, fileName + ".wav")
     textgrid_file = os.path.join(textgrid_path, fileName + ".TextGrid")
     if os.path.exists(wav_file) and os.path.exists(monolab_file):
-        #fw = open(textgrid_file, 'w', encoding = 'utf-8')
         wavefile = wave.open(wav_file, 'r')
         framerate = wavefile.getframerate()
         numframes = wavefile.getnframes()
         duration = float(numframes) / float(framerate)
-        word_list = getIntervalListFromProsodyWordLine(lines[i + 1].strip())
+        word_list = lines[i + 1].strip().split()
         syllable_phons_list, syllable_phons_no_tone_list = getIntervalListFromProsodyPhonLine(lines[i + 2].strip())
         if len(word_list) != len(syllable_phons_list):
             print("hello")
             exit(0)
         phons, words, breaks = initialWordIntervalTime(word_list, syllable_phons_list, syllable_phons_no_tone_list, monolab_file)
-        phons[-1].end = duration
-        words[-1].end = duration
+        phons[len(phons)].end = duration
+        words[len(words)].end = duration
         result_tiers = {}
         result_tiers[1] = Tier(None, "Phon", phons)
         result_tiers[2] = Tier(None, "Tone", setToneInterval(phons))
