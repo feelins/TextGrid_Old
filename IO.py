@@ -2,7 +2,7 @@
 #!/usr/bin/python
 # Created on 2018-03-22 17:06
 # @author: Administrator
-# @name: ReadWrite.py
+# @name: IO.py
 # @info: 
 
 import os
